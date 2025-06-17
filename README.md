@@ -51,3 +51,6 @@ I'll include the compiled dlls but to update get dlls from: [https://github.com/
 
 ### Linux
 `apt install libopus0 libsodium23`
+
+# Discord Bot
+Under "Bot" tab, toggle on all intents ("Presence Intent", "Server Members Intent", "Message Content Intent").
