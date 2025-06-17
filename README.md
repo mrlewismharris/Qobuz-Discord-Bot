@@ -1,9 +1,9 @@
 # Qobuz Discord Bot
-
 This is a Qobuz Music Discord Bot written using C#, dotnet 10.
+> This is an early development build. Currently it only does basic bot joining, downloading and song and playing. Limitations are: Bot often crashes. Bot doesn't leave when asked, only crashes. Bot doesn't queue. Bot can only play 1 song then sends a 400 Bad request (after playing the whole song). There is a list of fixes, improvements and general implementations that's so long it's pointless putting it here, just use the bot and you'll understand.
 
 # Requires
-> dotnet 10, qobuz-dl (python)
+> dotnet 10, qobuz-dl (python), ffmpeg, libopus. All instruction see below.
 
 ## dotnet 10 sdk
 This was written using 10.0.0-preview.5.25277.114
@@ -13,6 +13,7 @@ Use the installer found here: [10.0.0-preview.5.25277.114](https://dotnet.micros
 
 ### Linux
 ### Install the dotnet SDK alongside existing SDK:
+> You may should replace the sdk with a newer dotnet 10 binary.
 ```
 cd ~
 wget https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/sdk-10.0.100-preview.5-linux-x64-binaries
