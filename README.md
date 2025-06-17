@@ -1,11 +1,11 @@
 # Qobuz Discord Bot
 Qobuz Discord music bot in dotnet.
-> Early build. Bot can join, downloading adn play a single track, then breaks.
+> Early build. Bot can join, downloading and play a single track, then breaks.
 
 # Requires
 > dotnet9, qobuz-dl (python), ffmpeg, libopus. All instruction see below.
 
-## dotnet 10 sdk
+## dotnet 9 sdk
 Use the installer found [here](https://dotnet.microsoft.com/en-us/download/dotnet/9.0)
 
 Windows: `winget install Microsoft.DotNet.SDK.9`
