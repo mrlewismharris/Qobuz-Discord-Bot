@@ -24,15 +24,15 @@ GatewayClient client = new(new BotToken(_discordToken), new GatewayClientConfigu
 var commands = new CommandService<CommandContext>();
 
 commands.AddCommand(["h", "help", "commands", "info"], () => "Discord Music Bot.\n\nCommands:\n\n" +
-"!h, !help, !commands, !info - Get bot information (current response).\n" +
-"!status - Get current bot status.\n\n" +
-"!play *query* - Play a song using a song name and/or artist name.\n" +
-"!skip - Skips current track.\n" +
-"!stop - Stops current playback.");
+$"{_discordPrefix}h, {_discordPrefix}help, {_discordPrefix}commands, {_discordPrefix}info - Get bot information (current response).\n" +
+$"{_discordPrefix}status - Get current bot status.\n\n" +
+$"{_discordPrefix}p, {_discordPrefix}play *query* - Play a song using a song name and/or artist name.\n" +
+$"{_discordPrefix}skip - Skips current track.\n" +
+$"{_discordPrefix}stop - Stops current playback.");
 
 commands.AddCommand(["status"], () => _status);
 
-commands.AddCommand(["play"], async (CommandContext context, [CommandParameter(Remainder = true)] string query) =>
+commands.AddCommand(["p", "play"], async (CommandContext context, [CommandParameter(Remainder = true)] string query) =>
 {
     var guild = context.Guild!;
     if (!guild.VoiceStates.TryGetValue(context.User.Id, out var voiceState))
@@ -65,7 +65,7 @@ commands.AddCommand(["play"], async (CommandContext context, [CommandParameter(R
     if (string.IsNullOrWhiteSpace(trackPath))
         return "Failed to download and play track.";
 
-    await context.Message.ReplyAsync($"Found and downloaded song: \"{Path.GetFileNameWithoutExtension(trackPath).Replace(dlResult.TrackId, "")}\" - if this is not correct, use !playr *query* (coming soon).");
+    await context.Message.ReplyAsync($"Found and downloaded song: \"{Path.GetFileNameWithoutExtension(trackPath).Replace(dlResult.TrackId, "")}\" - if this is not correct, use {_discordPrefix}playr *query* (coming soon).");
     var outStream = voiceClient.CreateOutputStream();
 
     OpusEncodeStream stream = new(outStream, PcmFormat.Short, VoiceChannels.Stereo, OpusApplication.Audio);
