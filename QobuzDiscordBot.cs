@@ -1,8 +1,4 @@
-#:package CliWrap@3.9.*
-#:package DotNetEnv@3.1.*
-#:package NetCord@1.0.0-alpha.386
-#:package NetCord.Services@1.0.0-alpha.386
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Text;
 using CliWrap;
 using DotNetEnv;
