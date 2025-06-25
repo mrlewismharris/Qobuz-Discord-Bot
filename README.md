@@ -1,5 +1,5 @@
 # Qobuz Discord Bot
-Qobuz Discord music bot in dotnet.
+Qobuz Discord music bot built in dotnet.
 > Early build. Bot can join, download and play a single track, then breaks.
 
 # Requirements
@@ -56,4 +56,4 @@ On Discord developer portal under "Bot" tab, toggle on all intents ("Presence In
 
 Invite the bot, under "Installation" select method "Guild Install", then select the provider "Discord Provided Link", visit the link and add to your server.
 
-Use `dotnet run` to start the bot, thens ummon the bot with `!play *query*` (replace with your prefix).
+Use `dotnet run` to start the bot, then summon the bot with `!play *query*` (replace with your prefix).
