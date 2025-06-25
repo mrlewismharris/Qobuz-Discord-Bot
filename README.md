@@ -1,8 +1,8 @@
 # Qobuz Discord Bot
 Qobuz Discord music bot in dotnet.
-> Early build. Bot can join, downloading and play a single track, then breaks.
+> Early build. Bot can join, download and play a single track, then breaks.
 
-# Requires
+# Requirements
 > dotnet9, qobuz-dl (python), ffmpeg, libopus. All instruction see below.
 
 ## dotnet 9 sdk
@@ -17,7 +17,8 @@ chmod +x ./dotnet-install.sh
 ```
 
 ## Python3
-[Download from official website.](https://www.python.org/downloads/)
+Required for QobuzDL
+[All platforms download from official website.](https://www.python.org/downloads/)
 
 ## qobuz-dl + qobuz account (Python required)
 From [qobuz-dl GitHub repo](https://github.com/vitiko98/qobuz-dl):
@@ -37,11 +38,6 @@ Run `qobuz-dl` in terminal/cmd/powershell to initialise and enter your Qobuz cre
 
 **Note: qobuz-dl config settings will be overwritten by qobuz discord bot**
 
-# Setup
-Rename .env.example to .env and replace Discord token with your real discord bot token.
-
-cd to root and `dotnet run`.
-
 ## ffmpeg
 Use ffmpeg's recommended [cross-platform installers found here](https://ffmpeg.org/download.html).
 
@@ -52,5 +48,12 @@ I'll include the compiled dlls but to update get dlls from: [https://github.com/
 ### Linux
 `apt install libopus0 libsodium23`
 
-# Discord Bot
-Under "Bot" tab, toggle on all intents ("Presence Intent", "Server Members Intent", "Message Content Intent").
+# Setup
+Rename .env.example to .env and replace Discord token with your real discord bot token.
+
+## Discord Bot
+On Discord developer portal under "Bot" tab, toggle on all intents ("Presence Intent", "Server Members Intent", "Message Content Intent").
+
+Invite the bot, under "Installation" select method "Guild Install", then select the provider "Discord Provided Link", visit the link and add to your server.
+
+Use `dotnet run` to start the bot, thens ummon the bot with `!play *query*` (replace with your prefix).
