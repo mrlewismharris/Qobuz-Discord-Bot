@@ -32,6 +32,8 @@ $"{_discordPrefix}stop - Stops current playback.");
 
 commands.AddCommand(["status"], () => _status);
 
+
+
 commands.AddCommand(["p", "play"], async (CommandContext context, [CommandParameter(Remainder = true)] string query) =>
 {
     var guild = context.Guild!;
@@ -114,10 +116,23 @@ commands.AddCommand(["stop"], () =>
 
 commands.AddCommand(["kick", "leave", "quit", "q"], async (CommandContext context) =>
 {
-    //todo
-    return;
-});
+    var client = context.Client;
+    var guild = context.Guild;
 
+    // Get the current user (bot)
+    var botUser = await client.Rest.GetCurrentUserAsync();
+
+    // Check if the bot is in a voice channel
+    if (!guild.VoiceStates.TryGetValue(botUser.Id, out var voiceState) || !voiceState.ChannelId.HasValue)
+    {
+        await context.Channel.SendMessageAsync("I'm not connected to any voice channel!");
+        return;
+    }
+
+    // Leave the voice channel
+    await client.UpdateVoiceStateAsync(new VoiceStateProperties(guild.Id, null));
+    await context.Channel.SendMessageAsync("Left the voice channel!");
+});
 commands.AddModules(typeof(Program).Assembly);
 
 client.MessageCreate += async message =>
