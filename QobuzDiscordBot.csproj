@@ -10,8 +10,16 @@
   <ItemGroup>
     <PackageReference Include="CliWrap" Version="3.9.*" />
     <PackageReference Include="DotNetEnv" Version="3.1.*" />
-    <PackageReference Include="NetCord" Version="1.0.0-alpha.386" />
-    <PackageReference Include="NetCord.Services" Version="1.0.0-alpha.386" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.6" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.6">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.6" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.6" />
+    <PackageReference Include="NetCord.Hosting" Version="1.0.0-alpha.391" />
+    <PackageReference Include="NetCord.Hosting.Services" Version="1.0.0-alpha.391" />
+    <PackageReference Include="QobuzApiSharp" Version="0.0.8" />
   </ItemGroup>
 
 </Project>
