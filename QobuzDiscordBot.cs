@@ -7,8 +7,6 @@ using NetCord.Gateway;
 using NetCord.Hosting.Gateway;
 using NetCord.Hosting.Services;
 using NetCord.Hosting.Services.Commands;
-using NetCord.Services;
-using NetCord.Services.Commands;
 using QobuzDiscordBot;
 
 Env.Load();
@@ -18,15 +16,13 @@ var builder = Host.CreateApplicationBuilder();
 
 builder.Configuration.AddEnvironmentVariables();
 
-Console.WriteLine(Environment.GetEnvironmentVariable("Discord:Token"));
-
 builder.Services.AddDbContext<DataContext>(opts => opts.UseSqlite("Data Source=data.db"), ServiceLifetime.Singleton);
 
 builder.Services.AddDiscordGateway(opts =>
 {
-    opts.Token = Environment.GetEnvironmentVariable("Discord:Token");
+    opts.Token = Environment.GetEnvironmentVariable("DISCORD_TOKEN");
     opts.Intents = GatewayIntents.All;
-}).AddCommands();
+}).AddCommands(opts => { opts.Prefix = Environment.GetEnvironmentVariable("DISCORD_PREFIX"); });
 
 var host = builder.Build();
 
