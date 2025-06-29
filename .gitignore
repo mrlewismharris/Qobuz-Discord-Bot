@@ -1,4 +1,6 @@
 /Music
 /obj
 /bin
+/.vs
 .env
+*.db
