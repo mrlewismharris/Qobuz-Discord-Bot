@@ -7,7 +7,9 @@ using NetCord.Gateway;
 using NetCord.Hosting.Gateway;
 using NetCord.Hosting.Services;
 using NetCord.Hosting.Services.Commands;
+using QobuzApiSharp.Service;
 using QobuzDiscordBot;
+using QobuzDiscordBot.Services;
 
 Env.Load();
 Env.TraversePath().Load();
@@ -24,6 +26,19 @@ builder.Services.AddDiscordGateway(opts =>
     opts.Intents = GatewayIntents.All;
 }).AddCommands(opts => { opts.Prefix = Environment.GetEnvironmentVariable("DISCORD_PREFIX"); });
 
+if (!Environment.GetCommandLineArgs()[0].Contains("ef.dll"))
+{
+    QobuzApiService apiService = new QobuzApiService();
+    apiService.LoginWithEmail(
+        Environment.GetEnvironmentVariable("QOBUZ_EMAIL"),
+        Environment.GetEnvironmentVariable("QOBUZ_PASS_MD5")
+    );
+    builder.Services.AddSingleton(apiService);
+}
+
+builder.Services.AddSingleton<TextCommandModule>();
+builder.Services.AddSingleton<SearchCacheService>();
+
 var host = builder.Build();
 
 host.AddModules(typeof(Program).Assembly);
@@ -31,24 +46,3 @@ host.AddModules(typeof(Program).Assembly);
 host.UseGatewayHandlers();
 
 await host.RunAsync();
-
-/*client.MessageCreate += async message =>
-{
-    if (message.Author.IsBot || !message.Content.StartsWith(_discordPrefix))
-        return;
-
-    var result = await commands.ExecuteAsync(
-        prefixLength: 1,
-        new CommandContext(message, client)
-    );
-
-    _status = "Finished initialising";
-
-    if (result is IFailResult fail)
-        await message.ReplyAsync(fail.Message);
-};*/
-
-// client.VoiceStateUpdate += async (voiceState) =>
-// {
-//     //todo: implement way to leave when channel becomes empty.    
-// };

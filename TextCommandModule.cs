@@ -1,8 +1,13 @@
 ﻿using CliWrap;
+using Microsoft.Extensions.Configuration;
 using NetCord.Gateway;
 using NetCord.Gateway.Voice;
 using NetCord.Logging;
 using NetCord.Services.Commands;
+using QobuzApiSharp.Service;
+using QobuzDiscordBot.Models;
+using QobuzDiscordBot.Models.ViewModels;
+using QobuzDiscordBot.Services;
 using System.Diagnostics;
 using System.Text;
 
@@ -12,11 +17,17 @@ public class TextCommandModule : CommandModule<CommandContext>
 {
     private readonly DataContext _dbContext;
     private readonly string _rootPath;
+    private readonly QobuzApiService _qobuz;
+    private readonly SearchCacheService _searchCache;
+    private readonly string _prefix;
 
-    public TextCommandModule(DataContext dbContext)
+    public TextCommandModule(DataContext dbContext, QobuzApiService qobuz, IConfiguration config, SearchCacheService searchCache)
     {
         _dbContext = dbContext;
         _rootPath = Directory.GetCurrentDirectory();
+        _qobuz = qobuz;
+        _searchCache = searchCache;
+        _prefix = config["DISCORD_PREFIX"] ?? "!";
     }
 
     [Command("ping")]
@@ -26,14 +37,17 @@ public class TextCommandModule : CommandModule<CommandContext>
     }
 
     [Command(["h", "help", "commands", "info"])]
-    public static string Commands() => """
+    public string Commands() => $"""
         Qobuz Discord Music Bot Commands:
 
-        !h, !help, !commands !info ---> Get bot information.
-        !s, !status --> Get current bot status.
-        !p *query*, !play *query* --> Play a query (track, e.g. !p hey jude).
-        !skip --> Skips currently playing song.
-        !kick --> Kick the bot from the voice channel.
+        {_prefix}play *query*, {_prefix}p *query* --> Plays first search result (e.g. {_prefix}p hey jude).
+        {_prefix}search, {_prefix}s *query* ---> Search for a track.
+        {_prefix}sel *number* ---> Select a track from the search list ,or load more.
+        {_prefix}statuc, {_prefix}status --> Get current bot status.
+        {_prefix}skip --> Skips currently playing song.
+        {_prefix}kick --> Kick the bot from the voice channel.
+        {_prefix}h, {_prefix}help, {_prefix}commands ---> Get bot information.
+        {_prefix}info ---> Get current bot info.
         """;
 
     [Command(["p", "play"])]
@@ -103,6 +117,122 @@ public class TextCommandModule : CommandModule<CommandContext>
         await ffmpeg.StandardOutput.BaseStream.CopyToAsync(stream);
         await stream.FlushAsync();
         return "";
+    }
+
+    [Command(["s", "search"])]
+    public async Task<string> Search([CommandParameter(Remainder = true)] string query)
+    {
+        if (query == null || string.IsNullOrWhiteSpace(query) || query.Length < 4)
+            return "Query is required and must be more than 3 characters.";
+
+        Stopwatch timer = Stopwatch.StartNew();
+        var userId = Context.User.Id;
+        await Context.Message.ReplyAsync($"Searching for query \"{query}\"...");
+        if (_searchCache.Cache.Any(s => s.UserId == userId))
+            _searchCache.Cache.Remove(_searchCache.Cache.First(s => s.UserId == userId));
+        var results = _qobuz.SearchTracks(query, 5);
+
+        if (!results.Tracks.Items.Any())
+            return $"No tracks found with the query: \"{query}\"";
+
+        var userSearch = new UserSearch
+        {
+            UserId = userId,
+            SearchQuery = query,
+            Results = results.Tracks.Items.Select(t => new TrackDto
+            {
+                Id = t.Id,
+                Title = t.Title,
+                Duration = t.Duration,
+                Performer = t.Performer.Name,
+                Version = t.Version
+            }),
+            Offset = 0,
+            DateTime = DateTime.Now
+
+        };
+        _searchCache.Cache.Add(userSearch);
+        timer.Stop();
+
+        return $"""
+            Found 5 results in {timer.ElapsedMilliseconds}ms w/ no offset:
+
+            {string.Join("\n", userSearch.Results.Select((r, i) => $"{i}. {r.DisplayInfo})"))}
+            6. Search for more...
+        
+            Use {_prefix}sel *number*
+        """;
+    }
+
+    [Command(["sel", "select", "l"])]
+    public async Task<string> SelectSearch([CommandParameter(Remainder = true)] string selectedTrackString)
+    {
+        var userId = Context.User.Id;
+        if (!_searchCache.Cache.Any(s => s.UserId == userId))
+            return "You have no searches. Use !search or !s first (e.g. !s hey jude), then select from the list.";
+
+        if (selectedTrackString.Length > 1)
+            return "!sel only accepts 1 character";
+
+        if (!int.TryParse(selectedTrackString, out int selectedTrack))
+            return $"Track selection must be a number";
+
+        if (selectedTrack < 1 || selectedTrack > 6)
+            return $"Track selection must be a number between 1-6";
+
+        var userSearch = _searchCache.Cache.First(s => s.UserId == userId);
+
+        if (userSearch.DateTime < DateTime.Now.AddMinutes(-2)) //maybe do custom request timeout here from .env?
+        {
+            _searchCache.Cache.Remove(userSearch);
+            return $"Search selection timed out. Search again and select a track within 2 minutes.";
+        }
+
+        if (selectedTrack == 6)
+        {
+            Stopwatch timer = Stopwatch.StartNew();
+            var newOffset = userSearch.Offset + 5;
+            await Context.Message.ReplyAsync($"Searching for query \"{userSearch.SearchQuery}\" (skipping offset {newOffset})...");
+            if (_searchCache.Cache.Any(s => s.UserId == userId))
+                _searchCache.Cache.Remove(_searchCache.Cache.First(s => s.UserId == userId));
+            var results = _qobuz.SearchTracks(userSearch.SearchQuery, 5, newOffset);
+
+            if (!results.Tracks.Items.Any())
+                return $"No tracks found with the query: \"{userSearch.SearchQuery}\"";
+
+            userSearch = new UserSearch
+            {
+                UserId = userId,
+                SearchQuery = userSearch.SearchQuery,
+                Results = results.Tracks.Items.Select(t => new TrackDto
+                {
+                    Id = t.Id,
+                    Title = t.Title,
+                    Duration = t.Duration,
+                    Performer = t.Performer.Name,
+                    Version = t.Version
+                }),
+                Offset = newOffset,
+                DateTime = DateTime.Now
+
+            };
+            _searchCache.Cache.Add(userSearch);
+            timer.Stop();
+
+            return $"""
+                Found {userSearch.Results.Count()} results in {timer.ElapsedMilliseconds}ms w/ offset {newOffset}:
+
+                {string.Join("\n", userSearch.Results.Select((r, i) => $"{i}. {r.DisplayInfo}"))}
+                6. Search for more...
+
+                Use {_prefix}sel *number*
+            """;
+        }
+
+        var track = userSearch.Results.ElementAtOrDefault(selectedTrack);
+        _searchCache.Cache.Remove(_searchCache.Cache.First(s => s.UserId == userId));
+        return $"Selected Track {track!.DisplayInfo}";
+        //todo: add track to download queue
     }
 
     [Command(["s", "status"])]

@@ -49,10 +49,10 @@ I'll include the compiled dlls but to update get dlls from: [https://github.com/
 `apt install libopus0 libsodium23`
 
 # Setup
-Rename .env.example to .env and replace Discord token with your real discord bot token.
+Rename .env.example to .env and add your info.
 
-## Discord Bot
-On Discord developer portal under "Bot" tab, toggle on all intents ("Presence Intent", "Server Members Intent", "Message Content Intent").
+### Discord Developer Portal
+On the [Discord developer portal](https://discord.com/developers/applications), on your app, under the "Bot" menu item, toggle all intents ("Presence Intent", "Server Members Intent", "Message Content Intent").
 
 Invite the bot, under "Installation" select method "Guild Install", then select the provider "Discord Provided Link", visit the link and add to your server.
 
