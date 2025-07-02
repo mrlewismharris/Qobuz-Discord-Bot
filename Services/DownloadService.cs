@@ -1,0 +1,112 @@
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using NetCord.Gateway.Voice;
+using NetCord.JsonConverters;
+using QobuzApiSharp.Service;
+using QobuzDiscordBot.Models.DbModels;
+using QobuzDiscordBot.Models.Dtos;
+using QobuzDiscordBot.Models.ViewModels;
+
+namespace QobuzDiscordBot.Services
+{
+    public class DownloadService
+    {
+        private readonly string _rootPath;
+        private ICollection<QueuedTrack> _downloadQueue;
+        private bool _isDownloading;
+        private readonly DataContext _context;
+        private readonly IOService _ioService;
+        private readonly QobuzApiService _qobuzApi;
+        private readonly HttpClient _httpClient;
+        private readonly PlaybackService _playbackService;
+
+        public DownloadService(DataContext context, IOService ioService, QobuzApiService qobuzApi, HttpClient httpClient, PlaybackService playbackService)
+        {
+            _rootPath = Directory.GetCurrentDirectory();
+            _downloadQueue = new List<QueuedTrack>();
+            _context = context;
+            _ioService = ioService;
+            _isDownloading = false;
+            _qobuzApi = qobuzApi;
+            _httpClient = httpClient;
+            _playbackService = playbackService;
+        }
+
+        /// <summary>
+        /// Add a track to the download queue. If song is already downloaded, add to playback queue, if not add to download queue.
+        /// </summary>
+        public string Add(TrackDto track, DiscordUser user)
+        {
+            if (_downloadQueue.Any() || _isDownloading || _ioService.StorageLimitReached())
+            {
+                _downloadQueue.Add(new QueuedTrack
+                {
+                    Track = track,
+                    QueuedBy = user,
+                    QueuedAt = DateTime.Now,
+                });
+                return $"Track added to download queue (position: {_downloadQueue.Count()}).";
+            }
+            Download(track);
+            RecheckDownloadQueue();
+            return $"Downloading \"{track.Performer} - {track.Title}\"";
+        }
+
+        public void RecheckDownloadQueue()
+        {
+            if (_downloadQueue.Any() && !_isDownloading && !_ioService.StorageLimitReached())
+            {
+                var nextTrack = _downloadQueue.OrderBy(t => t.QueuedAt).First();
+                _downloadQueue.Remove(nextTrack);
+                Download(nextTrack.Track);
+            }
+        }
+
+        public async Task Download(TrackDto track)
+        {
+            _isDownloading = true;
+            var existingTrack = await CheckAlreadyDownloaded(track.Id.Value);
+            if (existingTrack != null)
+            {
+                _playbackService.Add(existingTrack);
+                return;
+            }
+            var fileUrl = _qobuzApi.GetTrackFileUrl(track.Id.ToString(), "6");
+            await using var stream = await _httpClient.GetStreamAsync(fileUrl.Url);
+            Console.WriteLine(fileUrl.Url);
+            var filePath = Path.Combine(_rootPath, "Music", $"{track.Performer} - {track.Title} ({track.Id}).flac");
+            if (!Directory.Exists(Path.Combine(_rootPath, "Music")))
+                Directory.CreateDirectory(Path.Combine(_rootPath, "Music"));
+            await using var file = File.Create(filePath);
+            await stream.CopyToAsync(file);
+            var dbTrack = new DownloadedTrack
+            {
+                Id = track.Id.Value,
+                PlayCount = 0,
+                Filename = filePath
+            };
+            await _context.DownloadedTracks.AddAsync(dbTrack);
+            await _context.SaveChangesAsync();
+            _playbackService.Add(dbTrack);
+            var queueTrack = _downloadQueue.FirstOrDefault(t => t.Track.Id == dbTrack.Id);
+            if (queueTrack != null)
+                _downloadQueue.Remove(queueTrack);
+            _isDownloading = false;
+            RecheckDownloadQueue();
+        }
+
+        public async Task<DownloadedTrack?> CheckAlreadyDownloaded(int id)
+        {
+            var dbTrack = await _context.DownloadedTracks.Where(t => t.Id == id).FirstOrDefaultAsync();
+            if (dbTrack == null)
+                return null;
+            else if (_ioService.TrackExists(dbTrack.Filename))
+                return dbTrack;
+            _context.DownloadedTracks.Remove(dbTrack);
+            await _context.SaveChangesAsync();
+            return dbTrack;
+        }
+
+        public void ClearDownloadQueue() => _downloadQueue.Clear();
+    }
+}

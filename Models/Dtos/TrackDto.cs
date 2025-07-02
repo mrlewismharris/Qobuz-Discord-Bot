@@ -1,4 +1,4 @@
-﻿namespace QobuzDiscordBot.Models
+﻿namespace QobuzDiscordBot.Models.Dtos
 {
     public class TrackDto
     {

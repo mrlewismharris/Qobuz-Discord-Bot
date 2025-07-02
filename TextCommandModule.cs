@@ -5,7 +5,7 @@ using NetCord.Gateway.Voice;
 using NetCord.Logging;
 using NetCord.Services.Commands;
 using QobuzApiSharp.Service;
-using QobuzDiscordBot.Models;
+using QobuzDiscordBot.Models.Dtos;
 using QobuzDiscordBot.Models.ViewModels;
 using QobuzDiscordBot.Services;
 using System.Diagnostics;
@@ -20,14 +20,20 @@ public class TextCommandModule : CommandModule<CommandContext>
     private readonly QobuzApiService _qobuz;
     private readonly SearchCacheService _searchCache;
     private readonly string _prefix;
+    private readonly IOService _ioService;
+    private readonly DownloadService _downloadService;
+    private readonly VoiceClientService _voiceClientService;
 
-    public TextCommandModule(DataContext dbContext, QobuzApiService qobuz, IConfiguration config, SearchCacheService searchCache)
+    public TextCommandModule(DataContext dbContext, QobuzApiService qobuz, IConfiguration config, SearchCacheService searchCache, IOService ioService, DownloadService downloadService, VoiceClientService voiceClientService)
     {
         _dbContext = dbContext;
         _rootPath = Directory.GetCurrentDirectory();
         _qobuz = qobuz;
         _searchCache = searchCache;
         _prefix = config["DISCORD_PREFIX"] ?? "!";
+        _ioService = ioService;
+        _downloadService = downloadService;
+        _voiceClientService = voiceClientService;
     }
 
     [Command("ping")]
@@ -122,8 +128,25 @@ public class TextCommandModule : CommandModule<CommandContext>
     [Command(["s", "search"])]
     public async Task<string> Search([CommandParameter(Remainder = true)] string query)
     {
+        var guild = Context.Guild!;
+        if (!guild.VoiceStates.TryGetValue(Context.User.Id, out var voiceState))
+            return "You are not connected to a voice channel.";
+
+        var client = Context.Client;
+
         if (query == null || string.IsNullOrWhiteSpace(query) || query.Length < 4)
             return "Query is required and must be more than 3 characters.";
+
+        //todo: should check here if bot is already in channel
+
+        if (_voiceClientService.Client == null)
+            _voiceClientService.Client = await client.JoinVoiceChannelAsync(
+                guild.Id,
+                voiceState.ChannelId.GetValueOrDefault(),
+                new VoiceClientConfiguration
+                {
+                    Logger = new ConsoleLogger()
+                });
 
         Stopwatch timer = Stopwatch.StartNew();
         var userId = Context.User.Id;
@@ -230,9 +253,17 @@ public class TextCommandModule : CommandModule<CommandContext>
         }
 
         var track = userSearch.Results.ElementAtOrDefault(selectedTrack);
+        if (track == null)
+            return $"There was no song at the index {selectedTrack}. Please try using {_prefix}sel again.";
         _searchCache.Cache.Remove(_searchCache.Cache.First(s => s.UserId == userId));
-        return $"Selected Track {track!.DisplayInfo}";
         //todo: add track to download queue
+        return _downloadService.Add(track, new DiscordUser
+        {
+            Id = Context.User.Id,
+            Email = Context.User.Email,
+            Username = Context.User.Username,
+            GlobalName = Context.User.GlobalName
+        });
     }
 
     [Command(["s", "status"])]
@@ -287,6 +318,12 @@ public class TextCommandModule : CommandModule<CommandContext>
 
     public string? GetTrackPathById(string fileId) =>
         Directory.EnumerateFiles(Path.Combine(_rootPath, "Music"), "*", SearchOption.AllDirectories).FirstOrDefault(f => Path.GetFileName(f).Contains(fileId)) ?? null;
+
+    [Command("test")]
+    public string Test()
+    {
+        return _ioService.GetStorageLimit().ToString();
+    }
 }
 
 

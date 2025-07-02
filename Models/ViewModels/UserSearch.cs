@@ -1,4 +1,6 @@
-﻿namespace QobuzDiscordBot.Models.ViewModels
+﻿using QobuzDiscordBot.Models.Dtos;
+
+namespace QobuzDiscordBot.Models.ViewModels
 {
     public class UserSearch
     {
