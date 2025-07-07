@@ -12,7 +12,6 @@
 
         public string Version { get; set; }
 
-        public string DisplayInfo => $"{Title}{(string.IsNullOrWhiteSpace(Version) ? "" : $" ({Version})")} - {Performer} ({
-            TimeSpan.FromSeconds((int)Duration!).Minutes}:{TimeSpan.FromSeconds((int)Duration!).Seconds})";
+        public string DisplayInfo => $"{Title}{(string.IsNullOrWhiteSpace(Version) ? "" : $" ({Version})")} - {Performer} ({TimeSpan.FromSeconds((int)Duration!).Minutes}:{(TimeSpan.FromSeconds((int)Duration!).Seconds < 10 ? "0" : "")}{TimeSpan.FromSeconds((int)Duration!).Seconds})";
     }
 }

@@ -37,7 +37,8 @@ public class TextCommandModule : CommandModule<CommandContext>
     }
 
     [Command("ping")]
-    public string Ping() {
+    public string Ping()
+    {
         Console.WriteLine($"{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")} ---> User: {Context.User.Email} did a ping.");
         return "Pong!";
     }
@@ -266,7 +267,7 @@ public class TextCommandModule : CommandModule<CommandContext>
         });
     }
 
-    [Command(["s", "status"])]
+    [Command(["status"])]
     public static string Status() => "Not yet implemented";
 
     [Command(["skip"])]
@@ -282,13 +283,13 @@ public class TextCommandModule : CommandModule<CommandContext>
         var botUser = await client.Rest.GetCurrentUserAsync();
 
         // Check if the bot is in a voice channel
-        if (!guild.VoiceStates.TryGetValue(botUser.Id, out var voiceState) || !voiceState.ChannelId.HasValue)
-            await Context.Channel.SendMessageAsync("I'm not connected to any voice channel!");
+        if (!guild!.VoiceStates.TryGetValue(botUser.Id, out var voiceState) || !voiceState.ChannelId.HasValue)
+            await Context.Channel!.SendMessageAsync("I'm not connected to any voice channel!");
 
         // Leave the voice channel
         await client.UpdateVoiceStateAsync(new VoiceStateProperties(guild.Id, null));
-        await Context.Channel.SendMessageAsync("Left the voice channel!");
-    } 
+        await Context.Channel!.SendMessageAsync("Left the voice channel!");
+    }
 
     public static async Task<(bool Success, string TrackId, List<string> Errors, string Output)> DownloadTrack(string query)
     {
