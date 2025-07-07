@@ -253,7 +253,7 @@ public class TextCommandModule : CommandModule<CommandContext>
             """;
         }
 
-        var track = userSearch.Results.ElementAtOrDefault(selectedTrack);
+        var track = userSearch.Results.ElementAtOrDefault(selectedTrack - 1);
         if (track == null)
             return $"There was no song at the index {selectedTrack}. Please try using {_prefix}sel again.";
         _searchCache.Cache.Remove(_searchCache.Cache.First(s => s.UserId == userId));
