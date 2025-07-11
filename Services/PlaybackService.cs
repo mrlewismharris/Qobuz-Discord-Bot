@@ -50,8 +50,19 @@ public class PlaybackService
     SongQueue nextInQueue = await _context.SongQueue
         .OrderBy(q => q.TimeStamp)
         .FirstAsync();
+    
+    bool trackDownloaded = await _context.DownloadedTracks
+            .AnyAsync(dt => dt.Filename == nextInQueue.Filename);
+
+    if (!trackDownloaded)
+    {
+      // Could do some better error handling here to download the track so it exists.
+      return;
+    }
+
     _context.SongQueue.Remove(nextInQueue);
     await _context.SaveChangesAsync();
+
     Play(nextInQueue.Id);
   }
 

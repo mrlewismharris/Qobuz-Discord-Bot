@@ -24,7 +24,9 @@ public class TextCommandModule : CommandModule<CommandContext>
     private readonly DownloadService _downloadService;
     private readonly VoiceClientService _voiceClientService;
 
-    public TextCommandModule(DataContext dbContext, QobuzApiService qobuz, IConfiguration config, SearchCacheService searchCache, IOService ioService, DownloadService downloadService, VoiceClientService voiceClientService)
+    private readonly PlaybackService _playbackService;
+
+    public TextCommandModule(DataContext dbContext, QobuzApiService qobuz, IConfiguration config, SearchCacheService searchCache, IOService ioService, DownloadService downloadService, VoiceClientService voiceClientService, PlaybackService playbackService)
     {
         _dbContext = dbContext;
         _rootPath = Directory.GetCurrentDirectory();
@@ -34,6 +36,7 @@ public class TextCommandModule : CommandModule<CommandContext>
         _ioService = ioService;
         _downloadService = downloadService;
         _voiceClientService = voiceClientService;
+        _playbackService = playbackService;
     }
 
     [Command("ping")]
@@ -273,6 +276,7 @@ public class TextCommandModule : CommandModule<CommandContext>
     [Command(["skip"])]
     public static string Skip()
     {
+        return "Not yet implemented";
     }
 
     [Command(["k", "kick", "q", "quit", "leave"])]
