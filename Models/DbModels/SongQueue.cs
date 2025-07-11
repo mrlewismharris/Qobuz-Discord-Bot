@@ -5,4 +5,6 @@ public class SongQueue
     public int Id { get; set; }
 
     public required string Filename { get; set; }
+
+    public required DateTime TimeStamp { get; set; }
 }

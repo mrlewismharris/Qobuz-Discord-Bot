@@ -271,7 +271,9 @@ public class TextCommandModule : CommandModule<CommandContext>
     public static string Status() => "Not yet implemented";
 
     [Command(["skip"])]
-    public static string Skip() => "Not yet implemented";
+    public static string Skip()
+    {
+    }
 
     [Command(["k", "kick", "q", "quit", "leave"])]
     public async Task Kick()
