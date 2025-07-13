@@ -51,6 +51,9 @@ I'll include the compiled dlls but to update get dlls from: [https://github.com/
 # Setup
 Rename .env.example to .env and add your info.
 
+### dotnet ef migration
+Migrations should happen automatically. To do them manually visit the [Microsoft migrations documentation](https://learn.microsoft.com/en-us/ef/core/managing-schemas/migrations/?tabs=dotnet-core-cli).
+
 ### Discord Developer Portal
 On the [Discord developer portal](https://discord.com/developers/applications), on your app, under the "Bot" menu item, toggle all intents ("Presence Intent", "Server Members Intent", "Message Content Intent").
 
