@@ -1,7 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using NetCord.Gateway.Voice;
-using NetCord.JsonConverters;
+using NetCord.Services.Commands;
 using QobuzApiSharp.Service;
 using QobuzDiscordBot.Models.DbModels;
 using QobuzDiscordBot.Models.Dtos;
@@ -35,7 +33,7 @@ public class DownloadService
     /// <summary>
     /// Add a track to the download queue. If song is already downloaded, add to playback queue, if not add to download queue.
     /// </summary>
-    public string Add(TrackDto track, DiscordUser user)
+    public async Task Add(TrackDto track, DiscordUser user, CommandContext? context = null)
     {
         if (_downloadQueue.Any() || _isDownloading || _ioService.StorageLimitReached())
         {
@@ -45,11 +43,19 @@ public class DownloadService
                 QueuedBy = user,
                 QueuedAt = DateTime.Now,
             });
-            return $"Track added to download queue (position: {_downloadQueue.Count()}).";
+            if (context != null)
+                context.Message.SendAsync($"Track added to download queue (position: {_downloadQueue.Count()}).");
         }
         Download(track);
         RecheckDownloadQueue();
-        return $"Downloading \"{track.Performer} - {track.Title}\"";
+        var queuePosition = _downloadQueue.Count() + await _playbackService.CountSongsInQueue();
+        var eta = TimeSpan.FromSeconds(_downloadQueue.Select(q => q.Track.Duration.Value).Sum() + (await _playbackService.GetQueuedSongs()).Select(s => s.DownloadedTrack.Duration).Sum()).TotalMinutes;
+        if ((await CheckAlreadyDownloaded(track.Id.Value)) == null)
+            if (context != null)
+                context.Message.SendAsync($"Downloading \"{track.Performer} - {track.Title}\"");
+        else
+            if (context != null)
+                context.Message.SendAsync($"{track.Performer} - {track.Title} has already been downloaded. Adding Track to queue (Position: {queuePosition}, playing in: {eta} minutes)");
     }
 
     public void RecheckDownloadQueue()
@@ -83,7 +89,8 @@ public class DownloadService
         {
             Id = track.Id.Value,
             PlayCount = 0,
-            Filename = filePath
+            Filename = filePath,
+            Duration = track.Duration ?? 0
         };
         await _context.DownloadedTracks.AddAsync(dbTrack);
         await _context.SaveChangesAsync();

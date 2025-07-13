@@ -7,5 +7,7 @@
         public int PlayCount { get; set; }
 
         public string Filename { get; set; }
+
+        public long Duration { get; set; }
     }
 }
