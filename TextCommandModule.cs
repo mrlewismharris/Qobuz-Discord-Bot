@@ -52,10 +52,13 @@ public class TextCommandModule : CommandModule<CommandContext>
         {_prefix}play *query*, {_prefix}p *query* --> Plays first search result (e.g. {_prefix}p hey jude).
         {_prefix}search, {_prefix}s *query* ---> Search for a track.
         {_prefix}sel *number* ---> Select a track from the search list ,or load more.
-        {_prefix}statuc, {_prefix}status --> Get current bot status.
+        {_prefix}status, {_prefix}status --> Get current bot status.
         {_prefix}skip --> Skips currently playing song.
+        {_prefix}clear --> Clear current queue.
         {_prefix}kick --> Kick the bot from the voice channel.
         {_prefix}h, {_prefix}help, {_prefix}commands ---> Get bot information.
+        {_prefix}nowplaying, {_prefix}playing ---> Get current playing track.
+        {_prefix}queue ---> Get current queued tracks.
         {_prefix}info ---> Get current bot info.
         """;
 
@@ -266,7 +269,7 @@ public class TextCommandModule : CommandModule<CommandContext>
             Email = Context.User.Email,
             Username = Context.User.Username,
             GlobalName = Context.User.GlobalName
-        });
+        }, Context);
     }
 
     [Command(["status"])]
@@ -275,7 +278,7 @@ public class TextCommandModule : CommandModule<CommandContext>
     [Command(["skip"])]
     public async Task<string> Skip()
     {
-        if (await _playbackService.Skip())
+        if (await _playbackService.Skip(Context))
             return "Skipped";
         return "Not yet implemented";
     }
@@ -286,46 +289,29 @@ public class TextCommandModule : CommandModule<CommandContext>
         var client = Context.Client;
         var guild = Context.Guild;
 
-        // Get the current user (bot)
         var botUser = await client.Rest.GetCurrentUserAsync();
 
-        // Check if the bot is in a voice channel
         if (!guild!.VoiceStates.TryGetValue(botUser.Id, out var voiceState) || !voiceState.ChannelId.HasValue)
             await Context.Channel!.SendMessageAsync("I'm not connected to any voice channel!");
 
-        // Leave the voice channel
         await client.UpdateVoiceStateAsync(new VoiceStateProperties(guild.Id, null));
         await Context.Channel!.SendMessageAsync("Left the voice channel!");
     }
 
-    public static async Task<(bool Success, string TrackId, List<string> Errors, string Output)> DownloadTrack(string query)
-    {
-        var stdErrBuffer = new StringBuilder();
-        Random random = new Random();
-        var newId = new string(Enumerable.Repeat("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", 8).Select(s => s[random.Next(s.Length)]).ToArray()).ToLower();
+    [Command("clear")]
+    public async Task Clear() => await _playbackService.ClearSongQueue(Context);
 
-        var result = await Cli.Wrap("qdl")
-            .WithArguments([
-                "lucky",
-                "-t", "track",
-                "--d", "./Music",
-                "--no-cover",
-                "--no-db",
-                "--no-m3u",
-                "-q", "5",
-                "-ff", ".",
-                "-tf", $"{"{tracktitle}"} {newId}",
-                query
-            ])
-            .WithValidation(CommandResultValidation.None)
-            .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErrBuffer))
-            .ExecuteAsync();
+    [Command(["nowplaying", "playing"])]
+    public string PrintNowPlaying() => _playbackService.GetNowPlaying();
 
-        return (true, newId, new List<string>(), stdErrBuffer.ToString());
-    }
-
-    public string? GetTrackPathById(string fileId) =>
-        Directory.EnumerateFiles(Path.Combine(_rootPath, "Music"), "*", SearchOption.AllDirectories).FirstOrDefault(f => Path.GetFileName(f).Contains(fileId)) ?? null;
+    [Command("queue")]
+    public async Task<string> PrintQueue() => $"""
+        Current Queue:
+        
+        {_playbackService.GetNowPlaying()}
+        {((await _playbackService.GetQueue()) is var queue && queue.Count() > 0 ? string.Join("\n", queue.Select((s, i) => $"{i+1}: {s.DownloadedTrack.Performer} - {s.DownloadedTrack.Title}{(
+            string.IsNullOrWhiteSpace(s.DownloadedTrack.Version) ? "" : $" ({s.DownloadedTrack.Version})")}")) : "Queue is empty.")}
+        """;
 
     [Command("test")]
     public string Test()

@@ -46,7 +46,7 @@ public class DownloadService
             if (context != null)
                 context.Message.SendAsync($"Track added to download queue (position: {_downloadQueue.Count()}).");
         }
-        Download(track);
+        Download(track, context);
         RecheckDownloadQueue();
         var queuePosition = _downloadQueue.Count() + await _playbackService.CountSongsInQueue();
         var eta = TimeSpan.FromSeconds(_downloadQueue.Select(q => q.Track.Duration.Value).Sum() + (await _playbackService.GetQueuedSongs()).Select(s => s.DownloadedTrack.Duration).Sum()).TotalMinutes;
@@ -68,13 +68,13 @@ public class DownloadService
         }
     }
 
-    public async Task Download(TrackDto track)
+    public async Task Download(TrackDto track, CommandContext? context = null)
     {
         _isDownloading = true;
         var existingTrack = await CheckAlreadyDownloaded(track.Id.Value);
         if (existingTrack != null)
         {
-            _playbackService.Add(existingTrack);
+            _playbackService.Add(existingTrack, context);
             return;
         }
         var fileUrl = _qobuzApi.GetTrackFileUrl(track.Id.ToString(), "6");
@@ -88,13 +88,16 @@ public class DownloadService
         var dbTrack = new DownloadedTrack
         {
             Id = track.Id.Value,
+            Title = track.Title,
+            Performer = track.Performer,
+            Version = track.Version,
             PlayCount = 0,
             Filename = filePath,
             Duration = track.Duration ?? 0
         };
         await _context.DownloadedTracks.AddAsync(dbTrack);
         await _context.SaveChangesAsync();
-        _playbackService.Add(dbTrack);
+        _playbackService.Add(dbTrack, context);
         var queueTrack = _downloadQueue.FirstOrDefault(t => t.Track.Id == dbTrack.Id);
         if (queueTrack != null)
             _downloadQueue.Remove(queueTrack);
