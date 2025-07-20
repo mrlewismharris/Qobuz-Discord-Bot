@@ -1,9 +1,10 @@
 # Qobuz Discord Bot
 Qobuz Discord music bot built in dotnet.
-> Early build. Bot can join, download and play a single track, then breaks.
+
+Notes for creating a simple Discord bot, see bottom of readme.
 
 # Requirements
-> dotnet9, qobuz-dl (python), ffmpeg, libopus. All instruction see below.
+> dotnet, ffmpeg, libopus.
 
 ## dotnet 9 sdk
 Use the installer found [here](https://dotnet.microsoft.com/en-us/download/dotnet/9.0)
@@ -15,28 +16,6 @@ wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh
 chmod +x ./dotnet-install.sh
 ./dotnet-install.sh --channel 9.0
 ```
-
-## Python3
-Required for QobuzDL
-[All platforms download from official website.](https://www.python.org/downloads/)
-
-## qobuz-dl + qobuz account (Python required)
-From [qobuz-dl GitHub repo](https://github.com/vitiko98/qobuz-dl):
-
-### Linux / MAC OS
-```
-pip3 install --upgrade qobuz-dl
-```
-
-### Windows
-```
-pip3 install windows-curses
-pip3 install --upgrade qobuz-dl
-```
-
-Run `qobuz-dl` in terminal/cmd/powershell to initialise and enter your Qobuz credentials.
-
-**Note: qobuz-dl config settings will be overwritten by qobuz discord bot**
 
 ## ffmpeg
 Use ffmpeg's recommended [cross-platform installers found here](https://ffmpeg.org/download.html).
@@ -51,10 +30,7 @@ I'll include the compiled dlls but to update get dlls from: [https://github.com/
 # Setup
 Rename .env.example to .env and add your info.
 
-### dotnet ef migration
-Migrations should happen automatically. To do them manually visit the [Microsoft migrations documentation](https://learn.microsoft.com/en-us/ef/core/managing-schemas/migrations/?tabs=dotnet-core-cli).
-
-### Discord Developer Portal
+### Notes for Discord Developer Portal
 On the [Discord developer portal](https://discord.com/developers/applications), on your app, under the "Bot" menu item, toggle all intents ("Presence Intent", "Server Members Intent", "Message Content Intent").
 
 Invite the bot, under "Installation" select method "Guild Install", then select the provider "Discord Provided Link", visit the link and add to your server.
