@@ -10,6 +10,7 @@ Notes for creating a simple Discord bot, see bottom of readme.
 Use the installer found [here](https://dotnet.microsoft.com/en-us/download/dotnet/9.0)
 
 Windows: `winget install Microsoft.DotNet.SDK.9`
+
 Linux:
 ```
 wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh
@@ -29,6 +30,36 @@ I'll include the compiled dlls but to update get dlls from: [https://github.com/
 
 # Setup
 Rename .env.example to .env and add your info.
+
+### Linux setup as systemd application (recommended server automation)
+cd to root directory (with .sln file), do `dotnet publish QobuzDiscordBot.sln -c Release`.
+
+Create systemd service: `sudo nano /etc/systemd/system/qobuz-discord-bot.service` with the content:
+
+```
+[Unit]
+Description=dotnet qobuz discord music bot
+After=network.target
+
+[Service]
+WorkingDirectory={path-to-root-directory}/Qobuz-Discord-Bot/bin/Release/net9.0/publish
+ExecStart={path-to-root-directory}/Qobuz-Discord-Bot/bin/Release/net9.0/publish/QobuzDiscordBot
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+Replace "{path-to-root-directory}" with root dir (use pwd to get absolute directory). You can customise the .service file with more advanced parameters but these are the only necessary ones.
+
+```
+sudo systemctl daemon-reload
+sudo systemctl enable qobuz-discord-bot
+sudo systemctl start qobuz-discord-bot
+sudo systemctl status qobuz-discord-bot
+```
+
+The bot will now autorun on boot, crash, exception, etc. To disable and stop use `sudo systemctl disable qobuz-discord-bot` then `sudo systemctl stop qobuz-discord-bot`.
 
 ### Notes for Discord Developer Portal
 On the [Discord developer portal](https://discord.com/developers/applications), on your app, under the "Bot" menu item, toggle all intents ("Presence Intent", "Server Members Intent", "Message Content Intent").
