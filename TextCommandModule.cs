@@ -9,14 +9,11 @@ using QobuzDiscordBot.Models.Dtos;
 using QobuzDiscordBot.Models.ViewModels;
 using QobuzDiscordBot.Services;
 using System.Diagnostics;
-using System.Text;
 
 namespace QobuzDiscordBot;
 
 public class TextCommandModule : CommandModule<CommandContext>
 {
-    private readonly DataContext _dbContext;
-    private readonly string _rootPath;
     private readonly QobuzApiService _qobuz;
     private readonly SearchCacheService _searchCache;
     private readonly string _prefix;
@@ -25,10 +22,8 @@ public class TextCommandModule : CommandModule<CommandContext>
     private readonly VoiceClientService _voiceClientService;
     private readonly PlaybackService _playbackService;
 
-    public TextCommandModule(DataContext dbContext, QobuzApiService qobuz, IConfiguration config, SearchCacheService searchCache, IOService ioService, DownloadService downloadService, VoiceClientService voiceClientService, PlaybackService playbackService)
+    public TextCommandModule(QobuzApiService qobuz, IConfiguration config, SearchCacheService searchCache, IOService ioService, DownloadService downloadService, VoiceClientService voiceClientService, PlaybackService playbackService)
     {
-        _dbContext = dbContext;
-        _rootPath = Directory.GetCurrentDirectory();
         _qobuz = qobuz;
         _searchCache = searchCache;
         _prefix = config["DISCORD_PREFIX"] ?? "!";
@@ -254,6 +249,7 @@ public class TextCommandModule : CommandModule<CommandContext>
 
                 Use {_prefix}sel *number*
             """);
+            return;
         }
 
         var track = userSearch.Results.ElementAtOrDefault(selectedTrack - 1);

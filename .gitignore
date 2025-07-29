@@ -4,3 +4,4 @@
 /.vs
 .env
 *.db*
+/publish
